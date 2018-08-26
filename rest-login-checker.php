@@ -19,7 +19,7 @@ add_action('rest_api_init', function() {
 });
 
 function login_check_func(WP_REST_Request $request) {
-    $user = $request->get_params('user')['user'];
+    $user = $_COOKIE[COOKIE_NAME];
     $response = new WP_REST_Response();
     $userData = new WP_User(intval(decript($user)));
     $token = wp_get_session_token();
