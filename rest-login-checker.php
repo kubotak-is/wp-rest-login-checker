@@ -7,8 +7,8 @@ Author: kubotak
 Version: 1.0
 Author URI: https://github.com/kubotak-is
 */
-const COOKIE_NAME = "wp-rest-login-checker";
-const ENCRYPT_KEY = "default-pass"; // 任意の文字列
+const COOKIE_NAME = 'wp-rest-login-checker';
+const ENCRYPT_KEY = 'default-pass'; // 任意の文字列
 const ALGO        = 'AES-256-CBC';
 
 add_action('rest_api_init', function() {
@@ -19,12 +19,12 @@ add_action('rest_api_init', function() {
 });
 
 function login_check_func(WP_REST_Request $request) {
-    $user = $request->get_params("user")["user"];
+    $user = $request->get_params('user')['user'];
     $response = new WP_REST_Response();
     $userData = new WP_User(intval(decript($user)));
     $token = wp_get_session_token();
     $i     = wp_nonce_tick();
-    $nonce = substr(wp_hash("{$i}|wp_rest|{$userData->ID}|{$token}", "nonce"), -12, 10);
+    $nonce = substr(wp_hash("{$i}|wp_rest|{$userData->ID}|{$token}", 'nonce'), -12, 10);
     $response->set_data([
         "result" => $userData->ID !== 0,
         "user"   => $userData,
