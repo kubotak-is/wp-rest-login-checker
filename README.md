@@ -7,7 +7,7 @@ WordpressをHeadless CMSとして利用する場合に下書き状態の投稿�
 
 ### Endpoint
 ```
-GET your-site-domain/wp-json/v1/login-check?user={Cookie Value}
+GET your-site-domain/wp-json/v1/login-check
 ```
 
 ## Notes
