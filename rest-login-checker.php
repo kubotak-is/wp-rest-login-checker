@@ -19,18 +19,19 @@ add_action('rest_api_init', function() {
 });
 
 function login_check_func(WP_REST_Request $request) {
-    $user = $_COOKIE[COOKIE_NAME];
+    $cookie   = $_COOKIE[COOKIE_NAME];
     $response = new WP_REST_Response();
-    $userData = new WP_User(intval(decript($user)));
-    $token = wp_get_session_token();
-    $i     = wp_nonce_tick();
-    $nonce = substr(wp_hash("{$i}|wp_rest|{$userData->ID}|{$token}", 'nonce'), -12, 10);
+    $user     = surviveUserId($cookie);
+    $userData = new WP_User($user);
+    $token    = wp_get_session_token();
+    $i        = wp_nonce_tick();
+    $nonce    = substr(wp_hash("{$i}|wp_rest|{$userData->ID}|{$token}", 'nonce'), -12, 10);
     $response->set_data([
         "result" => $userData->ID !== 0,
         "user"   => $userData,
         "nonce"  => $userData->ID !== 0 ? $nonce : '',
     ]);
-    $response->set_status($userData->ID !== 0 ? 200 : 404);
+    $response->set_status($userData->ID !== 0 ? 200 : 401);
     return $response;
 }
 
@@ -40,12 +41,13 @@ add_action('set_current_user', function() {
             // すでにセット済みの場合はスルー
             return;
         }
+        $time = time()+60*60*24*30;
         $user = wp_get_current_user();
         if (!empty($user) && $user->ID !== 0) {
             setcookie(
                 COOKIE_NAME,
-                encrypt($user->ID),
-                time()+60*60*24*30,
+                encrypt("{$user->ID}.{$time}"),
+                $time,
                 '/'
             );
         }
@@ -64,6 +66,23 @@ add_action('wp_logout', function() {
     }
 });
 
+/**
+ * @param string $cookie
+ * @return int
+ */
+function surviveUserId($cookie) {
+	$decrypt = decrypt($cookie);
+	list($user, $time) = explode(".", $decrypt);
+	if (time() > (int) $time) {
+		return 0;
+	}
+	return (int) $user;
+}
+
+/**
+ * @param int $length
+ * @return string
+ */
 function getRandomStr($length){
     $chars = implode('', array_merge(range('a', 'z'), range('A', 'Z'), range('0', '9')));
     $str   = '';
@@ -73,6 +92,10 @@ function getRandomStr($length){
     return $str;
 }
 
+/**
+ * @param string $value
+ * @return string
+ */
 function encrypt($value) {
     $iv_size   = openssl_cipher_iv_length(ALGO);
     $iv        = getRandomStr($iv_size);
@@ -87,7 +110,11 @@ function encrypt($value) {
     return $iv . $encrypted;
 }
 
-function decript($value) {
+/**
+ * @param string $value
+ * @return string
+ */
+function decrypt($value) {
     $iv_size   = openssl_cipher_iv_length(ALGO);
     $iv        = substr($value, 0, $iv_size);
     $encrypted = substr($value, $iv_size);
